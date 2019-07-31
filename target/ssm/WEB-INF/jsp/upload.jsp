@@ -105,7 +105,7 @@
             // onchange='handleFile(this)'
             mediaFileInput = "<a><span>选择文件 ></span><input type='file' accept='.mp4,.avi' name='myfiles' id=mediaFile" + inputCount + "_ class='' /></a>";
         } else {
-            mediaFileInput = "<a><span>选择文件 ></span><input type='file' accept='.mp3' name='myfiles' id=mediaFile" + inputCount + "_ class='' /></a>";
+            mediaFileInput = "<a><span>选择文件 ></span><input type='file' accept='.*' name='myfiles' id=mediaFile" + inputCount + "_ class='' /></a>";
         }
         mediaFileDiv.innerHTML = mediaFileInput;
         //上传进度条
@@ -217,11 +217,11 @@
                 }
                 endCount++;
                 //如果所有的文件都传输完则跳转回view
-                if (endCount >= mediaFileArray.length) {
-                    var location = (window.location + '').split('/');
-                    var basePath = location[0] + '//' + location[2] + '/' + location[3];
-                    window.location.href = basePath + "/micro/index?type=" + $("#type").val();
-                }
+                // if (endCount >= mediaFileArray.length) {
+                //     var location = (window.location + '').split('/');
+                //     var basePath = location[0] + '//' + location[2] + '/' + location[3];
+                //     window.location.href = basePath + "/micro/index?type=" + $("#type").val();
+                // }
                 return;
             }
             //服务端URL
@@ -256,12 +256,17 @@
                     if (data != "0") {
                         shardNum = data++;
                         console.log("当前分片数：", shardNum);
-                        var num = Math.ceil(shardNum * mediaFileArray[fileNum][3] * 100 / mediaFileArray[fileNum][1]); //百分比进度
+                        // var num = Math.ceil(shardNum * mediaFileArray[fileNum][3] * 100 / mediaFileArray[fileNum][1]); //百分比进度
+                         var num = Math.ceil(shardNum * 100 / mediaFileArray[fileNum][4]); //百分比进度
                         //改变进度条进度
                         $("#mediaFiles").find(".video-list").eq(fileNum).find(".progress").eq(0).removeClass("hide");
                         $("#mediaFiles").find(".video-list").eq(fileNum).find(".progress-bar").eq(0).attr("style", "width: " + num + "%;");
                         $("#mediaFiles").find(".video-list").eq(fileNum).find(".percent").eq(0).text(num + "%");
-                        $("#mediaFiles").find(".video-list").eq(fileNum).find(".size").eq(0).text(shardNum * 10 + "/" + Math.ceil(mediaFileArray[fileNum][1] / (1024 * 1024)) + "M");
+                        if(shardNum == mediaFileArray[fileNum][4] ){
+                            $("#mediaFiles").find(".video-list").eq(fileNum).find(".size").eq(0).text(Math.ceil(mediaFileArray[fileNum][1] / (1024 * 1024)) + "/" + Math.ceil(mediaFileArray[fileNum][1] / (1024 * 1024)) + "M");
+                        }else {
+                            $("#mediaFiles").find(".video-list").eq(fileNum).find(".size").eq(0).text(shardNum * 10 + "/" + Math.ceil(mediaFileArray[fileNum][1] / (1024 * 1024)) + "M");
+                        }
                         //通过button状态来判断是否继续上传
                         var text = $("#mediaFiles").find(".video-list").eq(fileNum).find(".stop-continue").eq(0).text();
                         if (text == "暂停上传") postFile(fileNum, shardNum);

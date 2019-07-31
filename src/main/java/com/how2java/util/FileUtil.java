@@ -35,6 +35,7 @@ public class FileUtil {
             // 将记录指针移动到文件最后
             raf.seek(raf.length());
             raf.write(sliceFile);
+            raf.close();
             return savePath;
         } catch (Exception e) {
             e.printStackTrace();
