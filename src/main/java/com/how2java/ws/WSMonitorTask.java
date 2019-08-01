@@ -1,4 +1,4 @@
-package com.how2java.websocket.websocket;
+package com.how2java.ws;
 
 //import com.eps.domain.robot.RobotStatus;
 //import com.eps.robot.utils.SpringTool;
@@ -7,6 +7,9 @@ package com.how2java.websocket.websocket;
 //import org.apache.log4j.spi.LoggerFactory;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
@@ -19,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class WSMonitorTask implements Delayed {
 
-//    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     //public static RobotStatusService robotStatusService = SpringContextHolder.getBean("robotStatusService");
 //    public static RobotStatusService robotStatusService = (RobotStatusService) SpringTool.getBean("robotStatusService");
@@ -88,17 +91,22 @@ public class WSMonitorTask implements Delayed {
     /**
      * 任务到了计划执行时间时执行
      */
-//    public void inform() {
-//        //更新连接状态
-//        logger.info("********* WSMonitorTask 到期(丢失心跳),开始改机器人 {} 为离线", robotCode);
+    public void inform() {
+        //更新连接状态
+        logger.info("********* WSMonitorTask 到期(丢失心跳),开始改机器人 {} 为离线", robotCode);
+        //关闭websoket
+        WebSocket.close(robotCode);
+
 //        RobotStatus robotStatus = new RobotStatus();
 //        robotStatus.setWebSocketStatus(0);
 //        robotStatus.setCurrentStatus(0);
 //        robotStatus.setRobotCode(robotCode);
 //        robotStatusService.updateWebSocketStatus(robotStatus);
-//        logger.info("********* WSMonitorTask ,改机器人 {} 为离线完成", robotCode);
-//
-//
-//    }
+        logger.info("********* WSMonitorTask ,改机器人 {} 为离线完成", robotCode);
+
+
+
+
+    }
 
 }

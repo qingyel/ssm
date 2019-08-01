@@ -1,9 +1,9 @@
-package com.how2java.websocket.websocket;
+package com.how2java.ws;
 
 
 
 
-import org.apache.log4j.spi.LoggerFactory;
+import com.how2java.ws.WSMonitorTask;
 
 import java.util.Objects;
 import java.util.concurrent.DelayQueue;
