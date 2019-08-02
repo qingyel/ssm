@@ -30,8 +30,8 @@
 <h1>聊天室</h1>
 <div style="margin: 20px;">
     <input id="text" type="text"/>
-    <button onclick="send()">发送</button>
-    <button onclick="closeWebSocket()">关闭连接</button>
+    <button id="send">发送</button>
+<%--    <button onclick="closeWebSocket()">关闭连接</button>--%>
 </div>
 
 <div id="message">

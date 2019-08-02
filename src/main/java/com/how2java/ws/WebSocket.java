@@ -40,19 +40,21 @@ public class WebSocket {
         WebSocket.robotClientMap = robotClientMap;
     }
 
-    public void startTest(){
-        threadPool.execute(() ->{
-            while (true){
-                robotClientMap.forEach((k,v) ->{
+    public void startTest() {
+        threadPool.execute(() -> {
+            while (robotClientMap.size() > 0) {
+                robotClientMap.forEach((k, v) -> {
                     String now = LocalTime.now().toString();
-                    MessageVo messageVo  = new MessageVo();
-                    messageVo.setMessage(now);
+                    MessageVo messageVo = new MessageVo();
+                    messageVo.setMessage("ping");
                     messageVo.setMessageType(0);
                     messageVo.setRobotCode(k);
                     sendMessage(messageVo);
+                    logger.info(k);
                 });
+                logger.info("【服务器中主动发出心跳】" + LocalTime.now().toString());
                 try {
-                    Thread.sleep(10000);
+                    Thread.sleep(20000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -87,8 +89,9 @@ public class WebSocket {
                         e.printStackTrace();
                     }
                 }
-                if(webSockets.size() == 1){
-                this.startTest();
+                if (webSockets.size() == 1) {
+                    this.startTest();
+                    WSMonitorTaskConsumer.startThread();
                 }
 
 
@@ -106,7 +109,7 @@ public class WebSocket {
 //                }
                 //移出延迟队列里的该账号
                 WSMonitorTaskConsumer.removeTask(robotCode);
-                WSMonitorTaskConsumer.delayQueue.add(new WSMonitorTask(System.currentTimeMillis()+30000, robotCode));
+                WSMonitorTaskConsumer.delayQueue.add(new WSMonitorTask(System.currentTimeMillis() + 30000, robotCode));
             } else {
                 notLogin(session);
             }
@@ -136,6 +139,7 @@ public class WebSocket {
         if (StringUtils.isNotBlank(this.robotCode)) {
             robotClientMap.remove(this.robotCode);
         }
+
         //更新连接状态
 //        RobotStatus robotStatus = new RobotStatus();
 //        robotStatus.setWebSocketStatus(0);
@@ -150,6 +154,7 @@ public class WebSocket {
 //        }
         //logger.info("【账号连接断开】 账号{}连接断开, 当前连接总数:{}", this.robotCode, webSockets.size());
         logger.info("【账号连接断开】 账号{}连接断开", this.robotCode);
+        logger.info("当前连接数:{}", webSockets.size());
 
         //移出延迟队列里的该账号
         WSMonitorTaskConsumer.removeTask(robotCode);
@@ -158,23 +163,20 @@ public class WebSocket {
     @OnMessage
     public void onMessage(String message) {
         logger.info("OnMessage:{}", message);
-//        MessageVo messageVo = JacksonUtil.readValue(message, MessageVo.class);
-        MessageVo messageVo =  JSON.parseObject(message,MessageVo.class);
-        if (messageVo.getMessageType() == 0 && StringUtils.isNotBlank(messageVo.getRobotCode())) {
-            //心跳 {"messageType":0, "robotCode":"tan_robot"}
-            //this.sendMessage(messageVo.getRobotCode(), message);
+        MessageVo messageVo = JSON.parseObject(message, MessageVo.class);
+        if (messageVo != null && StringUtils.isNotBlank(messageVo.getRobotCode())) {
+            if (!messageVo.getMessage().equals("pong")) {
+                logger.info("【收到客户端心跳】" + LocalTime.now().toString());
+                messageVo.setMessage("pong");
+                logger.info("【服务器发出心跳回复】" + LocalTime.now().toString());
+                sendMessage(messageVo);
+            }
             WebSocket s = robotClientMap.get(messageVo.getRobotCode());
             if (s != null && s.session.isOpen()) {
-                try {
-                    //TODO TEST
-                    s.session.getBasicRemote().sendText(message);
-                    logger.info("【websocket 心跳】 robotCode:" + robotCode + ",message:" + message);
-                    //来个心跳就先从队列中移除此账号，刷新过期30s,再加入队列，到期了设置断开状态
-                    WSMonitorTaskConsumer.removeTask(robotCode);
-                    WSMonitorTaskConsumer.delayQueue.add(new WSMonitorTask(System.currentTimeMillis()+30000, robotCode));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                logger.info("刷新连接状态" + robotCode + ",message:" + message);
+                //来个心跳就先从队列中移除此账号，刷新过期30s,再加入队列，到期了设置断开状态
+                WSMonitorTaskConsumer.removeTask(robotCode);
+                WSMonitorTaskConsumer.delayQueue.add(new WSMonitorTask(System.currentTimeMillis() + 30000, robotCode));
             } else {
                 logger.info("【websocket 心跳-断开】账号:{},找不到websocket对象，或连接已断开", messageVo.getRobotCode());
             }
@@ -185,7 +187,7 @@ public class WebSocket {
 
     public static void sendMessage(MessageVo messageVo) {
         String message = messageVo.toJson();
-        sendMessage(messageVo.getRobotCode(),message);
+        sendMessage(messageVo.getRobotCode(), message);
     }
 
     /**
@@ -195,12 +197,12 @@ public class WebSocket {
      * @param message
      */
     public static void sendMessage(String robotCode, String message) {
-        logger.info("【websocket准备发消息】 robotCode:" + robotCode + ",message:" + message);
+//        logger.info("【websocket准备发消息】 robotCode:" + robotCode + ",message:" + message);
         WebSocket s = robotClientMap.get(robotCode);
         if (s != null && s.session.isOpen()) {
             try {
                 s.session.getBasicRemote().sendText(message);
-                logger.info("【websocket发出消息】 robotCode:" + robotCode + ",message:" + message);
+//                logger.info("【websocket发出消息】 robotCode:" + robotCode + ",message:" + message+LocalTime.now().toString());
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -210,8 +212,8 @@ public class WebSocket {
     }
 
     //
-    public static void close(String robotCode){
-        if(StringUtils.isNotBlank(robotCode)){
+    public static void close(String robotCode) {
+        if (StringUtils.isNotBlank(robotCode)) {
             WebSocket ws = robotClientMap.get(robotCode);
             webSockets.remove(ws);
             robotClientMap.remove(robotCode);

@@ -11,7 +11,7 @@ public class JsonTest {
         vo.setMessage("hh");
         String jsonStr = JSON.toJSONString(vo);
 
-        MessageVo messageVo1 =  JSON.parseObject(jsonStr,MessageVo.class);
+        MessageVo messageVo1 =  JSON.parseObject("ss",MessageVo.class);
         MessageVo messageVo =  JSON.parseObject("{\"message\":\"heart\",\"messageType\":0,\"robotCode\":\"test\"}",MessageVo.class);
         System.out.println("ss");
     }
