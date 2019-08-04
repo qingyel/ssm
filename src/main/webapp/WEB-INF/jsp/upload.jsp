@@ -12,6 +12,7 @@
     <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 
     <script type="text/javascript" src="/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/spark-md5/spark-md5.js"></script>
 
     <script type="text/javascript">
         /*将post method 改变为delete*/
@@ -31,7 +32,9 @@
         <div class="col-xs-10 col-xs-offset-1 col-lg-10 col-lg-offset-1 mt20 mb10">
             <a href="javascript:;" id="addMediaButton" onclick="addFileInput()" class="mybtn btn-add-user2">添加视频</a>
         </div>
-        <div><button onclick="submitFile()">开始上传</button></div>
+        <div>
+            <button onclick="submitFile()">开始上传</button>
+        </div>
     </div>
 </div>
 <script type="text/javascript">
@@ -154,9 +157,47 @@
                 shardArray[5] = 0;//当前上传状态,0-等待上传,1-正在上传,2是上传完成
                 shardArray[6] = 0;//已传输最后分片编号
                 shardArray[7] = newName;//服务器存储名称
+                shardArray[8] = "";//MD5值
                 mediaFileArray[i] = shardArray;//将每个file的分片信息放入全局数组
+                var blobSlice = File.prototype.slice || File.prototype.mozSlice || File.prototype.webkitSlice,
+                    file = fileInputs[i].files[0],
+                    currentShard = 0,
+                    spark = new SparkMD5(),    //创建SparkMD5的实例
+                    // time,
+                    running = true;
+                fileReader = new FileReader();
+                fileReader.onload = function (e) {
+
+                    console.log("Read chunk number (currentChunk + 1) of  chunks ");
+
+                    spark.appendBinary(e.target.result);                 // append array buffer
+                    currentShard += 1;
+                    if (currentShard < shardCount) {
+                        loadNext();
+                    } else {
+                        running = false;
+                        console.log("Finished loading!");
+                        shardArray[8] = spark.end();
+                        console.log(shardArray[8]);
+                        // return spark.end();     // 完成计算，返回结果
+                    }
+                };
+
+                fileReader.onerror = function () {
+                    running = false;
+                    console.log("something went wrong");
+                };
+                running = true;
+                loadNext();
+
+                function loadNext() {
+                    let start = currentShard * shardSize,
+                        end = start + shardSize >= file.size ? file.size : start + shardSize;
+
+                    fileReader.readAsBinaryString(blobSlice.call(file, start, end));
+                }
             } else {
-                //当进入修改页面file为空时
+                //TODO 当进入修改页面file为空时
                 var newName = guid();
                 var name = "", //文件名
                     size = 0, //总大小
@@ -172,11 +213,13 @@
                 shardArray[5] = 0;//当前上传状态,0-等待上传,1-正在上传,2是上传完成
                 shardArray[6] = 0;//已传输最后分片编号
                 shardArray[7] = newName;//服务器存储名称
+                shardArray[8] = "";//MD5值
                 mediaFileArray[i] = shardArray;//将每个file的分片信息放入全局数组
             }
         }
         postFile(0, 0);//第一个参数是第几个file元素,最后一个参数是从第几个分片开始上传
     }
+
 
     //附件完成上传计数器
     var endCount = 0;
@@ -257,14 +300,14 @@
                         shardNum = data++;
                         console.log("当前分片数：", shardNum);
                         // var num = Math.ceil(shardNum * mediaFileArray[fileNum][3] * 100 / mediaFileArray[fileNum][1]); //百分比进度
-                         var num = Math.ceil(shardNum * 100 / mediaFileArray[fileNum][4]); //百分比进度
+                        var num = Math.ceil(shardNum * 100 / mediaFileArray[fileNum][4]); //百分比进度
                         //改变进度条进度
                         $("#mediaFiles").find(".video-list").eq(fileNum).find(".progress").eq(0).removeClass("hide");
                         $("#mediaFiles").find(".video-list").eq(fileNum).find(".progress-bar").eq(0).attr("style", "width: " + num + "%;");
                         $("#mediaFiles").find(".video-list").eq(fileNum).find(".percent").eq(0).text(num + "%");
-                        if(shardNum == mediaFileArray[fileNum][4] ){
+                        if (shardNum == mediaFileArray[fileNum][4]) {
                             $("#mediaFiles").find(".video-list").eq(fileNum).find(".size").eq(0).text(Math.ceil(mediaFileArray[fileNum][1] / (1024 * 1024)) + "/" + Math.ceil(mediaFileArray[fileNum][1] / (1024 * 1024)) + "M");
-                        }else {
+                        } else {
                             $("#mediaFiles").find(".video-list").eq(fileNum).find(".size").eq(0).text(shardNum * 10 + "/" + Math.ceil(mediaFileArray[fileNum][1] / (1024 * 1024)) + "M");
                         }
                         //通过button状态来判断是否继续上传
